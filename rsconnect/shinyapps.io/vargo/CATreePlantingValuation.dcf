@@ -1,0 +1,13 @@
+name: CATreePlantingValuation
+title: CATreePlantingValuation
+username:
+account: vargo
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 252058
+bundleId: 1153070
+url: https://vargo.shinyapps.io/CATreePlantingValuation/
+when: 1514442374.09984
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: CATreeValuation/.gitattributes|CATreeValuation/.git/COMMIT_EDITMSG|CATreeValuation/.git/config|CATreeValuation/.git/description|CATreeValuation/.git/FETCH_HEAD|CATreeValuation/.git/HEAD|CATreeValuation/.git/index|CATreeValuation/.git/hooks/applypatch-msg.sample|CATreeValuation/.git/hooks/commit-msg.sample|CATreeValuation/.git/hooks/post-update.sample|CATreeValuation/.git/hooks/pre-applypatch.sample|CATreeValuation/.git/hooks/pre-commit.sample|CATreeValuation/.git/hooks/pre-push.sample|CATreeValuation/.git/hooks/pre-rebase.sample|CATreeValuation/.git/hooks/pre-receive.sample|CATreeValuation/.git/hooks/prepare-commit-msg.sample|CATreeValuation/.git/hooks/update.sample|CATreeValuation/.git/info/exclude|CATreeValuation/.git/logs/HEAD|CATreeValuation/.git/logs/refs/heads/master|CATreeValuation/.git/logs/refs/remotes/origin/master|CATreeValuation/.git/objects/6f/9509c88bed7080d496fc5e1d87a9315e30549d|CATreeValuation/.git/objects/72/d473f0f27fa7cde574f578d4f8d4e3b70b926a|CATreeValuation/.git/objects/df/e0770424b2a19faf507a501ebfc23be8f54e7b|CATreeValuation/.git/refs/heads/master|CATreeValuation/.git/refs/remotes/origin/master
