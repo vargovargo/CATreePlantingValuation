@@ -43,9 +43,9 @@ ui <- fluidPage(
       mainPanel(
          tabsetPanel(type = "tabs",
                      tabPanel(title = "Introduction",  includeHTML("intro.html")),
-                     tabPanel(title = "Bang Per Buck",  dataTableOutput('periodDT'), dataTableOutput('carbonDT')),
-                     tabPanel(title = "Carbon Benefits", plotOutput('carbBene'), dataTableOutput('carbBeneDT')),
-                     tabPanel(title = "Net $ Benefits", plotOutput('dollarBene'), dataTableOutput('dollarBeneDT'))
+                     tabPanel(title = "Bang Per Buck",  includeHTML('Dashboard1.html'),plotOutput('bpbPlot'),dataTableOutput('bpbDT')),
+                     tabPanel(title = "Carbon Benefits", includeHTML('Dashboard2.html'),plotOutput('carbBene'), dataTableOutput('carbBeneDT')),
+                     tabPanel(title = "Net $ Benefits", includeHTML('Dashboard3.html'),plotOutput('dollarBene'), dataTableOutput('dollarBeneDT'))
                      )
       )
    )
@@ -66,14 +66,14 @@ server <- function(input, output) {
           conversion2015() %>%
             spread(key = Metric, value = value)
         } , Units == "dollars") %>%
-          select(Region, Size, Year, benefitsPerTree, costsPerTree)
+          select(Region, Type, Year, benefitsPerTree, costsPerTree)
       },
       {
         filter({
           conversion2015() %>%
             spread(key = Metric, value = value)
         }, Units == "pounds") %>%
-          select(Region, Size, Year,carbonSequestration)
+          select(Region, Type, Year,carbonSequestration)
       })  %>%
       mutate(`Net Benefit per Tree per Year` = (benefitsPerTree - costsPerTree)*(1/(1+(input$socDisRate/100))^(Year-1)),
              `Carbon per Tree per Year` = (carbonSequestration)*(1/(1+(input$carDisRate/100))^(Year-1)))
@@ -93,22 +93,22 @@ server <- function(input, output) {
                                "Temperate Interior West", 
                                "Inland Valley (San Juaquin Valley)"))
     
-    Sizes <- factor(c("Small", "Med", "Large","Conifer"), levels=c("Small", "Med", "Large","Conifer"))
+    Types <- factor(c("Small", "Med", "Large","Conifer"), levels=c("Small", "Med", "Large","Conifer"))
     
     temp <- conversion2015() %>%
       filter(Metric == "costsPerTree") %>%
-      group_by(Region, Size) %>%
+      group_by(Region, Type) %>%
       summarize(TotalCosts = sum(value),
                 `Number of Trees` = round((1000000*input$investment)/sum(value),0)) %>%
-      select(Region, Size, `Number of Trees`) %>%
+      select(Region, Type, `Number of Trees`) %>%
       left_join(discountTable())
     
     plotDataTemp <- data.frame()
     
     for(region in Regions){
-      for(size in Sizes){
+      for(type in Types){
         
-        new <- temp %>% filter(Region == region & Size == size) %>%
+        new <- temp %>% filter(Region == region & Type == type) %>%
           mutate(carbonChart = cumsum(`Carbon per Tree per Year`)*0.000453592*`Number of Trees`,
                  dollarsChart = cumsum(`Net Benefit per Tree per Year`)*`Number of Trees`)
         
@@ -128,28 +128,48 @@ server <- function(input, output) {
   
   
     
-  output$periodDT <- renderDataTable({
+  output$bpbDT <- renderDataTable({
       
    discount40 <- discountTable() %>%
-     group_by(Region, Size) %>%
+     group_by(Region, Type) %>%
      summarise(`Cummulative Net Benefit per Tree per Year` = sum(`Net Benefit per Tree per Year`),
                `Cummulative Carbon per Tree per Year` = sum(`Carbon per Tree per Year`))
    
    conversion2015() %>%
      filter(Metric == "costsPerTree") %>%
-     group_by(Region, Size) %>%
+     group_by(Region, Type) %>%
      summarize(TotalCosts = sum(value),
                `Number of Trees` = round((1000000*input$investment)/sum(value),0)) %>% 
      inner_join(discount40) %>%
      mutate(`Tons of Carbon/$1,000` = round(1000*(`Cummulative Carbon per Tree per Year`*0.000453592)/TotalCosts,3)) %>%
-     select(Region, Size, `Number of Trees`, `Tons of Carbon/$1,000`)
+     select(Region, Type, `Number of Trees`, `Tons of Carbon/$1,000`)
   
   })
   
   
+  output$bpbPlot <- renderPlot({
+  discount40 <- discountTable() %>%
+    group_by(Region, Type) %>%
+    summarise(`Cummulative Net Benefit per Tree per Year` = sum(`Net Benefit per Tree per Year`),
+              `Cummulative Carbon per Tree per Year` = sum(`Carbon per Tree per Year`))
+  
+  conversion2015() %>%
+    filter(Metric == "costsPerTree") %>%
+    group_by(Region, Type) %>%
+    summarize(TotalCosts = sum(value),
+              `Number of Trees` = round((1000000*input$investment)/sum(value),0)) %>% 
+    inner_join(discount40) %>%
+    mutate(`Tons of Carbon/$1,000` = round(1000*(`Cummulative Carbon per Tree per Year`*0.000453592)/TotalCosts,3)) %>%
+    select(Region, Type, `Number of Trees`, `Tons of Carbon/$1,000`) %>%
+  ggplot(aes(color=Region, y=`Tons of Carbon/$1,000`, shape=Type, x=`Number of Trees`)) + geom_point(size=4)
+  
+})
+ 
+  
+  
   output$carbBene <- renderPlot({
     
-    ggplot(plotData(),aes(x=Year, y=carbonChart/1000, color=Size)) + geom_line(size=2) + facet_wrap(~ Region)  +
+    ggplot(plotData(),aes(x=Year, y=carbonChart/1000, color=Type)) + geom_line(size=2) + facet_wrap(~ Region)  +
       ylab(label = "Carbon Sequestered (1,000 Metric Tons)") + xlab("Years After Investment")
   
   })
@@ -159,15 +179,15 @@ server <- function(input, output) {
 
     plotData() %>%
       filter(Year %in% c(5, 15, 40)) %>%
-      select(Region, Size, Year, carbonChart) %>%
-      mutate(carbonChart = round(carbonChart,1)) %>%
+      select(Region, Type, Year, carbonChart) %>%
+      mutate(carbonChart = round(carbonChart/1000,1)) %>%
       spread(key = Year, value = carbonChart)
 
   })
    
   output$dollarBene <- renderPlot({ 
     
-    plotData() %>% ggplot(aes(x=Year, y=dollarsChart/1000000, color=Size)) + geom_line(size=2) + geom_hline(yintercept = 0, size=1, alpha=0.5) + facet_wrap(~Region) +
+    plotData() %>% ggplot(aes(x=Year, y=dollarsChart/1000000, color=Type)) + geom_line(size=2) + geom_hline(yintercept = 0, type=1, alpha=0.5) + facet_wrap(~Region) +
       ylab(label = "Net Benefits (Millions $)") + xlab("Years After Investment")
   
   })
@@ -176,13 +196,12 @@ server <- function(input, output) {
     
     plotData() %>%
       filter(Year %in% c(5, 15, 40)) %>%
-      select(Region, Size, Year, dollarsChart) %>%
-      mutate(dollarsChart = round(dollarsChart,0)) %>%
+      select(Region, Type, Year, dollarsChart) %>%
+      mutate(dollarsChart = round(dollarsChart/1000000,0)) %>%
       spread(key = Year, value = dollarsChart)
     
   })
 
-  
 }
 
 # Run the application 
